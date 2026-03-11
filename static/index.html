@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SFDC Job Manager</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Keep the styling super premium and modern, as requested by guidelines -->
+</head>
+<body>
+    <div id="app">
+        <!-- Will be populated dynamically by main.js -->
+        <header class="app-header">
+            <h1>SFDC Job Manager</h1>
+            <div id="org-selector-container" style="display:flex; gap:10px; align-items:center;">
+                <!-- Org selector dropdown will go here -->
+                <button id="btn-add-org" class="action-btn" title="Authenticate a new org">+ Add Org</button>
+            </div>
+        </header>
+        <main class="app-main">
+            <!-- Tabs component -->
+            <div class="tabs">
+                <button class="tab-button active" data-tab="batch">Batch Jobs</button>
+                <button class="tab-button" data-tab="scheduled">Scheduled Jobs</button>
+            </div>
+            
+            <!-- Class Selector -->
+            <div class="class-selector-section">
+                <h2>Select Classes</h2>
+                <div id="class-multiselect-container">
+                    <!-- Searchable multi-select -->
+                </div>
+            </div>
+
+            <!-- Action Panel -->
+            <div class="action-panel">
+                <button id="btn-run-now" class="action-btn primary">Run Now</button>
+                <input type="number" id="input-batch-size" placeholder="Batch Size (optional)" min="1" max="2000" style="width:160px;">
+                <button id="btn-schedule" class="action-btn">Schedule</button>
+                <input type="text" id="input-cron" placeholder="Cron expression" style="width:200px;">
+                <button id="btn-abort" class="action-btn danger" disabled>Abort Selected Jobs</button>
+            </div>
+
+            <!-- Job History Table -->
+            <div class="job-history-section">
+                <h2>Job History</h2>
+                <div class="table-controls">
+                    <input type="text" id="input-table-filter" placeholder="Filter jobs...">
+                </div>
+                <div class="table-container">
+                    <table id="job-table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAllJobs"></th>
+                                <th>Class Name</th>
+                                <th>Job Type</th>
+                                <th>Status</th>
+                                <th>Total Batches</th>
+                                <th>Processed</th>
+                                <th>Errors</th>
+                                <th>Created Date</th>
+                                <th>Job ID</th>
+                            </tr>
+                        </thead>
+                        <tbody id="job-table-body">
+                            <!-- Rows go here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
