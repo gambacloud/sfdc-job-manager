@@ -70,6 +70,29 @@
             </div>
         </main>
     </div>
+    <!-- Add Org Modal -->
+    <div id="add-org-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h2>Add Salesforce Org</h2>
+            <p style="opacity:0.7; margin-bottom:1.5rem;">This will open the Salesforce login page in your browser.</p>
+            <div class="modal-field">
+                <label for="modal-login-url">Environment</label>
+                <select id="modal-login-url">
+                    <option value="https://login.salesforce.com">Production / Developer</option>
+                    <option value="https://test.salesforce.com">Sandbox</option>
+                </select>
+            </div>
+            <div class="modal-field">
+                <label for="modal-alias">Alias (optional)</label>
+                <input type="text" id="modal-alias" placeholder="e.g. my-sandbox">
+            </div>
+            <div class="modal-actions">
+                <button id="modal-cancel" class="action-btn">Cancel</button>
+                <button id="modal-login" class="action-btn primary">Login</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/js/main.js"></script>
 </body>
 </html>

@@ -12,11 +12,23 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initUI() {
-    // Add Org
-    document.getElementById('btn-add-org').addEventListener('click', async () => {
-        const loginUrl = prompt('Login URL:', 'https://login.salesforce.com');
-        if (!loginUrl) return;
-        const alias = prompt('Alias for this org (optional):', '');
+    // Add Org - open modal
+    const modal = document.getElementById('add-org-modal');
+    document.getElementById('btn-add-org').addEventListener('click', () => {
+        modal.style.display = 'flex';
+    });
+    document.getElementById('modal-cancel').addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.style.display = 'none';
+    });
+    document.getElementById('modal-login').addEventListener('click', async () => {
+        const loginUrl = document.getElementById('modal-login-url').value;
+        const alias = document.getElementById('modal-alias').value.trim();
+        const loginBtn = document.getElementById('modal-login');
+        loginBtn.disabled = true;
+        loginBtn.innerText = 'Opening...';
         try {
             const res = await fetch('/api/orgs/login', {
                 method: 'POST',
@@ -25,13 +37,17 @@ function initUI() {
             });
             const data = await res.json();
             if (data.status === 'success') {
-                alert('Browser login opened. Complete login in the browser, then click OK here to refresh orgs.');
+                modal.style.display = 'none';
+                alert('Complete login in the browser window that opened, then click OK to refresh orgs.');
                 fetchOrgs();
             } else {
                 alert('Error: ' + (data.detail || 'Unknown error'));
             }
         } catch (e) {
             alert('Failed to start org login.');
+        } finally {
+            loginBtn.disabled = false;
+            loginBtn.innerText = 'Login';
         }
     });
 
