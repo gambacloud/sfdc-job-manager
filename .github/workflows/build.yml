@@ -26,10 +26,10 @@ jobs:
             binary_name: SFDCJobManager
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Set up Python 3.11
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.11'
         cache: 'pip'
@@ -45,7 +45,7 @@ jobs:
         pyinstaller --name "SFDCJobManager" --add-data "static${{ matrix.separator }}static" --clean -y --onefile main.py
 
     - name: Upload Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: SFDCJobManager-${{ matrix.os }}
         path: dist/${{ matrix.binary_name }}
