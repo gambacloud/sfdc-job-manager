@@ -39,6 +39,7 @@
                 <input type="number" id="input-batch-size" placeholder="Batch Size (optional)" min="1" max="2000" style="width:160px;">
                 <button id="btn-schedule" class="action-btn">Schedule</button>
                 <input type="text" id="input-cron" placeholder="Cron expression" style="width:200px;">
+                <button id="btn-cron-builder" class="cron-builder-btn" title="Cron Generator">🔧</button>
                 <button id="btn-abort" class="action-btn danger" disabled>Abort Selected Jobs</button>
             </div>
 
@@ -90,6 +91,63 @@
             <div class="modal-actions">
                 <button id="modal-cancel" class="action-btn">Cancel</button>
                 <button id="modal-login" class="action-btn primary">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cron Generator Modal -->
+    <div id="cron-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content" style="width:460px;">
+            <h2>Cron Expression Builder</h2>
+            <p style="opacity:0.7; margin-bottom:1rem; font-size:0.9rem;">Salesforce cron: Seconds Minutes Hours Day Month DayOfWeek Year(optional)</p>
+            <div class="cron-grid">
+                <div class="modal-field">
+                    <label>Frequency</label>
+                    <select id="cron-frequency">
+                        <option value="once">Run Once</option>
+                        <option value="hourly">Every Hour</option>
+                        <option value="daily" selected>Every Day</option>
+                        <option value="weekly">Every Week</option>
+                        <option value="monthly">Every Month</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div class="modal-field">
+                    <label>Minute</label>
+                    <select id="cron-minute"></select>
+                </div>
+                <div class="modal-field">
+                    <label>Hour</label>
+                    <select id="cron-hour"></select>
+                </div>
+                <div class="modal-field" id="cron-dow-field" style="display:none;">
+                    <label>Day of Week</label>
+                    <select id="cron-dow">
+                        <option value="MON">Monday</option>
+                        <option value="TUE">Tuesday</option>
+                        <option value="WED">Wednesday</option>
+                        <option value="THU">Thursday</option>
+                        <option value="FRI">Friday</option>
+                        <option value="SAT">Saturday</option>
+                        <option value="SUN">Sunday</option>
+                    </select>
+                </div>
+                <div class="modal-field" id="cron-dom-field" style="display:none;">
+                    <label>Day of Month</label>
+                    <select id="cron-dom"></select>
+                </div>
+            </div>
+            <div class="modal-field" id="cron-custom-field" style="display:none;">
+                <label>Custom Expression</label>
+                <input type="text" id="cron-custom" placeholder="0 0 12 * * ?">
+            </div>
+            <div class="cron-preview">
+                <label>Preview</label>
+                <code id="cron-preview-text">0 0 12 * * ?</code>
+            </div>
+            <div class="modal-actions">
+                <button id="cron-cancel" class="action-btn">Cancel</button>
+                <button id="cron-apply" class="action-btn primary">Apply</button>
             </div>
         </div>
     </div>

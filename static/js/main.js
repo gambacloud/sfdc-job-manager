@@ -8,6 +8,7 @@ let selectedJobIds = new Set();
 
 document.addEventListener('DOMContentLoaded', () => {
     initUI();
+    initCronBuilder();
     fetchOrgs();
 });
 
@@ -398,4 +399,94 @@ function clearData() {
     if(container) container.innerHTML = '';
     renderTable();
     updateActionPanelVisibility();
+}
+
+// ---- Cron Builder ----
+function initCronBuilder() {
+    const cronModal = document.getElementById('cron-modal');
+    const freq = document.getElementById('cron-frequency');
+    const minute = document.getElementById('cron-minute');
+    const hour = document.getElementById('cron-hour');
+    const dom = document.getElementById('cron-dom');
+    const preview = document.getElementById('cron-preview-text');
+
+    // Populate minute (0-59)
+    for (let i = 0; i < 60; i++) {
+        const opt = document.createElement('option');
+        opt.value = i; opt.text = String(i).padStart(2, '0');
+        minute.appendChild(opt);
+    }
+    // Populate hour (0-23)
+    for (let i = 0; i < 24; i++) {
+        const opt = document.createElement('option');
+        opt.value = i; opt.text = String(i).padStart(2, '0');
+        hour.appendChild(opt);
+    }
+    hour.value = '12'; // Default noon
+    // Populate day of month (1-31)
+    for (let i = 1; i <= 31; i++) {
+        const opt = document.createElement('option');
+        opt.value = i; opt.text = String(i);
+        dom.appendChild(opt);
+    }
+
+    // Open modal
+    document.getElementById('btn-cron-builder').addEventListener('click', () => {
+        cronModal.style.display = 'flex';
+        updateCronPreview();
+    });
+    // Close modal
+    document.getElementById('cron-cancel').addEventListener('click', () => {
+        cronModal.style.display = 'none';
+    });
+    cronModal.addEventListener('click', (e) => {
+        if (e.target === cronModal) cronModal.style.display = 'none';
+    });
+
+    // Frequency change — show/hide fields
+    freq.addEventListener('change', () => {
+        const v = freq.value;
+        document.getElementById('cron-dow-field').style.display = (v === 'weekly') ? 'block' : 'none';
+        document.getElementById('cron-dom-field').style.display = (v === 'monthly') ? 'block' : 'none';
+        document.getElementById('cron-custom-field').style.display = (v === 'custom') ? 'block' : 'none';
+
+        // Show/hide time fields
+        const showTime = ['once', 'daily', 'weekly', 'monthly'].includes(v);
+        minute.closest('.modal-field').style.display = showTime ? 'block' : (v === 'hourly' ? 'block' : 'none');
+        hour.closest('.modal-field').style.display = (showTime ? 'block' : 'none');
+        updateCronPreview();
+    });
+
+    // Live preview on any change
+    [minute, hour, dom, document.getElementById('cron-dow'), freq, document.getElementById('cron-custom')].forEach(el => {
+        el.addEventListener('change', updateCronPreview);
+        el.addEventListener('input', updateCronPreview);
+    });
+
+    // Apply
+    document.getElementById('cron-apply').addEventListener('click', () => {
+        document.getElementById('input-cron').value = preview.innerText;
+        cronModal.style.display = 'none';
+    });
+
+    function updateCronPreview() {
+        const v = freq.value;
+        let expr = '';
+
+        if (v === 'custom') {
+            expr = document.getElementById('cron-custom').value || '0 0 12 * * ?';
+        } else if (v === 'hourly') {
+            expr = `0 ${minute.value} * * * ?`;
+        } else if (v === 'daily') {
+            expr = `0 ${minute.value} ${hour.value} * * ?`;
+        } else if (v === 'weekly') {
+            const dow = document.getElementById('cron-dow').value;
+            expr = `0 ${minute.value} ${hour.value} ? * ${dow}`;
+        } else if (v === 'monthly') {
+            expr = `0 ${minute.value} ${hour.value} ${dom.value} * ?`;
+        } else { // once
+            expr = `0 ${minute.value} ${hour.value} * * ?`;
+        }
+        preview.innerText = expr;
+    }
 }

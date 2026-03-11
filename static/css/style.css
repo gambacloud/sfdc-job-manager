@@ -259,3 +259,49 @@ tr:hover td {
     justify-content: flex-end;
     margin-top: 1.5rem;
 }
+
+/* Cron Builder */
+.cron-builder-btn {
+    background: var(--surface-hover);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all var(--transition-speed);
+    line-height: 1;
+}
+
+.cron-builder-btn:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.cron-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.cron-preview {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.cron-preview label {
+    display: block;
+    font-size: 0.8rem;
+    opacity: 0.6;
+    margin-bottom: 0.3rem;
+}
+
+.cron-preview code {
+    font-size: 1.1rem;
+    color: #38bdf8;
+    font-family: 'Consolas', 'Courier New', monospace;
+}
