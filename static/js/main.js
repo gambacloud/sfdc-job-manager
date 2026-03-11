@@ -184,10 +184,10 @@ async function fetchClasses() {
             availableClasses = data.classes;
             renderClassSelector();
         } else {
-            container.innerHTML = `Error: ${data.detail}`;
+            container.innerHTML = `<div class="api-warning">⚠️ Error: ${data.detail}<br><small>This may be a profile or permission set issue. Ensure your user has API access and the "Author Apex" or "View Setup and Configuration" permissions.</small></div>`;
         }
     } catch (e) {
-        container.innerHTML = 'Error loading classes.';
+        container.innerHTML = '<div class="api-warning">⚠️ Failed to connect. Check that the org is authenticated and your user profile has Tooling API access.</div>';
     }
 }
 
@@ -316,7 +316,11 @@ function renderTable() {
         if (currentTab === 'scheduled' && job.type !== 'Scheduled') return;
         
         // Filter by status dropdown
-        if (statusFilter && job.status !== statusFilter) return;
+        if (statusFilter === 'CompletedWithErrors') {
+            if (!(job.status === 'Completed' && job.errors > 0)) return;
+        } else if (statusFilter && job.status !== statusFilter) {
+            return;
+        }
         
         // Filter by search
         const rowText = `${job.className} ${job.status} ${job.id}`.toLowerCase();
@@ -508,6 +512,11 @@ function initDrawer() {
     });
     drawer.addEventListener('click', (e) => {
         if (e.target === drawer) drawer.style.display = 'none';
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && drawer.style.display !== 'none') {
+            drawer.style.display = 'none';
+        }
     });
 }
 

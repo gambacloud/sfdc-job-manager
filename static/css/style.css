@@ -306,6 +306,20 @@ tr:hover td {
     font-family: 'Consolas', 'Courier New', monospace;
 }
 
+/* API Warning */
+.api-warning {
+    background: rgba(234, 179, 8, 0.1);
+    border: 1px solid rgba(234, 179, 8, 0.4);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    color: #fbbf24;
+    line-height: 1.6;
+}
+
+.api-warning small {
+    opacity: 0.8;
+}
+
 /* Drawer */
 .drawer-overlay {
     position: fixed;
