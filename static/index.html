@@ -48,6 +48,16 @@
                 <h2>Job History</h2>
                 <div class="table-controls">
                     <input type="text" id="input-table-filter" placeholder="Filter jobs...">
+                    <select id="status-filter">
+                        <option value="">All Statuses</option>
+                        <option value="Queued">Queued</option>
+                        <option value="Holding">Holding</option>
+                        <option value="Preparing">Preparing</option>
+                        <option value="Processing">Processing</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Aborted">Aborted</option>
+                        <option value="Failed">Failed</option>
+                    </select>
                 </div>
                 <div class="table-container">
                     <table id="job-table">
@@ -148,6 +158,19 @@
             <div class="modal-actions">
                 <button id="cron-cancel" class="action-btn">Cancel</button>
                 <button id="cron-apply" class="action-btn primary">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Details Drawer -->
+    <div id="job-drawer" class="drawer-overlay" style="display:none;">
+        <div class="drawer-panel">
+            <div class="drawer-header">
+                <h2>Job Details</h2>
+                <button id="drawer-close" class="drawer-close-btn">&times;</button>
+            </div>
+            <div id="drawer-content" class="drawer-body">
+                <!-- Populated by JS -->
             </div>
         </div>
     </div>

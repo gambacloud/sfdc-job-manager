@@ -99,14 +99,14 @@ def get_job_history(target_org: str, class_names: list):
     class_names_str = ",".join([f"'{name}'" for name in class_names])
     
     # 1. Query AsyncApexJob for Batch jobs
-    batch_query = f"SELECT Id, ApexClass.Name, Status, TotalJobItems, JobItemsProcessed, NumberOfErrors, CreatedDate FROM AsyncApexJob WHERE JobType = 'BatchApex' AND ApexClass.Name IN ({class_names_str}) ORDER BY CreatedDate DESC LIMIT 200"
+    batch_query = f"SELECT Id, ApexClass.Name, Status, ExtendedStatus, MethodName, TotalJobItems, JobItemsProcessed, NumberOfErrors, CreatedDate, CompletedDate, CreatedBy.Name FROM AsyncApexJob WHERE JobType = 'BatchApex' AND ApexClass.Name IN ({class_names_str}) ORDER BY CreatedDate DESC LIMIT 200"
     batch_cmd = ["sf", "data", "query", "-o", target_org, "-q", batch_query, "--json"]
     batch_data = run_sfdx_cmd(batch_cmd)
     batch_records = batch_data.get("result", {}).get("records", [])
     
     # 2. Query CronTrigger/CronJobDetail for Scheduled jobs
     # We match the class name with CronJobDetail.Name or query AsyncApexJob for ScheduledApex
-    sched_query = f"SELECT Id, ApexClass.Name, Status, TotalJobItems, JobItemsProcessed, NumberOfErrors, CreatedDate FROM AsyncApexJob WHERE JobType = 'ScheduledApex' AND ApexClass.Name IN ({class_names_str}) ORDER BY CreatedDate DESC LIMIT 200"
+    sched_query = f"SELECT Id, ApexClass.Name, Status, ExtendedStatus, MethodName, TotalJobItems, JobItemsProcessed, NumberOfErrors, CreatedDate, CompletedDate, CreatedBy.Name FROM AsyncApexJob WHERE JobType = 'ScheduledApex' AND ApexClass.Name IN ({class_names_str}) ORDER BY CreatedDate DESC LIMIT 200"
     sched_cmd = ["sf", "data", "query", "-o", target_org, "-q", sched_query, "--json"]
     sched_data = run_sfdx_cmd(sched_cmd)
     sched_records = sched_data.get("result", {}).get("records", [])
@@ -126,10 +126,14 @@ def get_job_history(target_org: str, class_names: list):
             "className": r.get("ApexClass", {}).get("Name"),
             "type": "Batch",
             "status": r.get("Status"),
+            "extendedStatus": r.get("ExtendedStatus") or "",
+            "methodName": r.get("MethodName") or "",
             "totalBatches": r.get("TotalJobItems"),
             "processed": r.get("JobItemsProcessed"),
             "errors": r.get("NumberOfErrors"),
-            "createdDate": r.get("CreatedDate")
+            "createdDate": r.get("CreatedDate"),
+            "completedDate": r.get("CompletedDate") or "",
+            "createdBy": r.get("CreatedBy", {}).get("Name", "")
         })
         
     for r in sched_records:
@@ -138,10 +142,14 @@ def get_job_history(target_org: str, class_names: list):
             "className": r.get("ApexClass", {}).get("Name"),
             "type": "Scheduled",
             "status": r.get("Status"),
+            "extendedStatus": r.get("ExtendedStatus") or "",
+            "methodName": r.get("MethodName") or "",
             "totalBatches": r.get("TotalJobItems", 0),
             "processed": r.get("JobItemsProcessed", 0),
             "errors": r.get("NumberOfErrors", 0),
-            "createdDate": r.get("CreatedDate")
+            "createdDate": r.get("CreatedDate"),
+            "completedDate": r.get("CompletedDate") or "",
+            "createdBy": r.get("CreatedBy", {}).get("Name", "")
         })
         
     # Sort globally by createdDate descending

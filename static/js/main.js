@@ -9,6 +9,7 @@ let selectedJobIds = new Set();
 document.addEventListener('DOMContentLoaded', () => {
     initUI();
     initCronBuilder();
+    initDrawer();
     fetchOrgs();
 });
 
@@ -126,6 +127,7 @@ function initUI() {
 
     // Table Filter
     document.getElementById('input-table-filter').addEventListener('input', renderTable);
+    document.getElementById('status-filter').addEventListener('change', renderTable);
     
     // Select All Checkbox
     document.getElementById('selectAllJobs').addEventListener('change', (e) => {
@@ -306,19 +308,22 @@ function renderTable() {
     document.getElementById('selectAllJobs').checked = false;
     
     const filterText = document.getElementById('input-table-filter').value.toLowerCase();
-    
-    // Client-side sort if needed? Standard sorting by createdDate handled in backend.
+    const statusFilter = document.getElementById('status-filter').value;
     
     jobHistory.forEach(job => {
         // Filter by tab
         if (currentTab === 'batch' && job.type !== 'Batch') return;
         if (currentTab === 'scheduled' && job.type !== 'Scheduled') return;
         
+        // Filter by status dropdown
+        if (statusFilter && job.status !== statusFilter) return;
+        
         // Filter by search
         const rowText = `${job.className} ${job.status} ${job.id}`.toLowerCase();
         if (filterText && !rowText.includes(filterText)) return;
         
         const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
         
         const tdCheck = document.createElement('td');
         const check = document.createElement('input');
@@ -326,10 +331,12 @@ function renderTable() {
         check.className = 'job-checkbox';
         check.value = job.id;
         check.addEventListener('change', (e) => {
+            e.stopPropagation();
             if (e.target.checked) selectedJobIds.add(job.id);
             else selectedJobIds.delete(job.id);
             updateAbortButton();
         });
+        check.addEventListener('click', (e) => e.stopPropagation());
         tdCheck.appendChild(check);
         
         const statusBadgeClass = `status-${(job.status || 'unknown').toLowerCase().replace(/\s+/g, '-')}`;
@@ -346,6 +353,9 @@ function renderTable() {
             <td><small style="opacity: 0.7">${job.id}</small></td>
         `;
         tr.firstElementChild.appendChild(check);
+        
+        // Click row to open drawer
+        tr.addEventListener('click', () => openDrawer(job));
         
         tbody.appendChild(tr);
     });
@@ -489,4 +499,102 @@ function initCronBuilder() {
         }
         preview.innerText = expr;
     }
+}
+// ---- Job Details Drawer ----
+function initDrawer() {
+    const drawer = document.getElementById('job-drawer');
+    document.getElementById('drawer-close').addEventListener('click', () => {
+        drawer.style.display = 'none';
+    });
+    drawer.addEventListener('click', (e) => {
+        if (e.target === drawer) drawer.style.display = 'none';
+    });
+}
+
+function openDrawer(job) {
+    const drawer = document.getElementById('job-drawer');
+    const content = document.getElementById('drawer-content');
+    const statusClass = `status-${(job.status || 'unknown').toLowerCase().replace(/\s+/g, '-')}`;
+    
+    const duration = (job.completedDate && job.createdDate)
+        ? formatDuration(new Date(job.createdDate), new Date(job.completedDate))
+        : '—';
+
+    content.innerHTML = `
+        <div class="drawer-detail-grid">
+            <div class="drawer-detail">
+                <span class="drawer-label">Job ID</span>
+                <span class="drawer-value" style="font-family:monospace;font-size:0.85rem;">${job.id}</span>
+            </div>
+            <div class="drawer-detail">
+                <span class="drawer-label">Class Name</span>
+                <span class="drawer-value">${job.className}</span>
+            </div>
+            <div class="drawer-detail">
+                <span class="drawer-label">Job Type</span>
+                <span class="drawer-value">${job.type}</span>
+            </div>
+            <div class="drawer-detail">
+                <span class="drawer-label">Status</span>
+                <span class="drawer-value"><span class="status-badge ${statusClass}">${job.status}</span></span>
+            </div>
+            <div class="drawer-detail">
+                <span class="drawer-label">Total Batches</span>
+                <span class="drawer-value">${job.totalBatches ?? '—'}</span>
+            </div>
+            <div class="drawer-detail">
+                <span class="drawer-label">Processed</span>
+                <span class="drawer-value">${job.processed ?? '—'}</span>
+            </div>
+            <div class="drawer-detail">
+                <span class="drawer-label">Errors</span>
+                <span class="drawer-value" style="${job.errors > 0 ? 'color:var(--danger-color);font-weight:700;' : ''}">${job.errors ?? 0}</span>
+            </div>
+            <div class="drawer-detail">
+                <span class="drawer-label">Method</span>
+                <span class="drawer-value">${job.methodName || '—'}</span>
+            </div>
+            <div class="drawer-detail">
+                <span class="drawer-label">Created</span>
+                <span class="drawer-value">${job.createdDate ? new Date(job.createdDate).toLocaleString() : '—'}</span>
+            </div>
+            <div class="drawer-detail">
+                <span class="drawer-label">Completed</span>
+                <span class="drawer-value">${job.completedDate ? new Date(job.completedDate).toLocaleString() : '—'}</span>
+            </div>
+            <div class="drawer-detail">
+                <span class="drawer-label">Duration</span>
+                <span class="drawer-value">${duration}</span>
+            </div>
+            <div class="drawer-detail">
+                <span class="drawer-label">Created By</span>
+                <span class="drawer-value">${job.createdBy || '—'}</span>
+            </div>
+        </div>
+        ${job.extendedStatus ? `
+        <div class="drawer-section">
+            <span class="drawer-label">Extended Status / Error Message</span>
+            <pre class="drawer-error-box">${escapeHtml(job.extendedStatus)}</pre>
+        </div>` : ''}
+    `;
+    drawer.style.display = 'flex';
+}
+
+function formatDuration(start, end) {
+    const ms = end - start;
+    if (ms < 0) return '—';
+    const s = Math.floor(ms / 1000);
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    const rs = s % 60;
+    if (m < 60) return `${m}m ${rs}s`;
+    const h = Math.floor(m / 60);
+    const rm = m % 60;
+    return `${h}h ${rm}m`;
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
 }
