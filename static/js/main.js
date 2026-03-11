@@ -194,8 +194,10 @@ async function fetchClasses() {
 function renderClassSelector() {
     const container = document.getElementById('class-multiselect-container');
     container.innerHTML = `
-        <div style="display:flex; gap:10px; align-items:center;">
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
             <input type="text" id="class-search" placeholder="Search classes...">
+            <button class="action-btn" id="btn-select-all" style="padding:0.4rem 0.7rem; font-size:0.85rem;">Select All</button>
+            <button class="action-btn" id="btn-clear-all" style="padding:0.4rem 0.7rem; font-size:0.85rem;">Clear All</button>
             <button class="action-btn" id="btn-refresh-jobs" style="padding: 0.5rem">Refresh Jobs</button>
         </div>
         <div class="class-list" id="class-list"></div>
@@ -206,6 +208,23 @@ function renderClassSelector() {
     });
     
     document.getElementById('btn-refresh-jobs').addEventListener('click', refreshJobs);
+    
+    document.getElementById('btn-select-all').addEventListener('click', () => {
+        const filter = (document.getElementById('class-search')?.value || '').toLowerCase();
+        availableClasses.forEach(cls => {
+            if (cls.Name.toLowerCase().includes(filter)) selectedClasses.add(cls.Name);
+        });
+        renderClassList(filter);
+        refreshJobs();
+        updateActionPanelVisibility();
+    });
+    
+    document.getElementById('btn-clear-all').addEventListener('click', () => {
+        selectedClasses.clear();
+        renderClassList(document.getElementById('class-search')?.value || '');
+        refreshJobs();
+        updateActionPanelVisibility();
+    });
     
     renderClassList('');
 }
