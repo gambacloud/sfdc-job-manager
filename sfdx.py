@@ -57,39 +57,78 @@ def login_org(login_url: str = "https://login.salesforce.com", alias: str = None
     return data.get("result", {})
 
 def get_job_classes(target_org: str):
-    """Query ApexClass to find Schedulable or Batchable classes."""
-    # We query all active, non-namespaced classes and filter by body locally.
-    # Tooling API restricts large body queries without limits sometimes, but usually fine.
-    # Let's try regular data query on Tooling API.
-    query = "SELECT Id, Name, Body FROM ApexClass WHERE NamespacePrefix = null AND Status = 'Active'"
-    cmd = ["sf", "data", "query", "-o", target_org, "-q", query, "--json", "-t"]
+    """Query ApexClass names via standard API, then detect interfaces via anonymous Apex."""
+    # Step 1: Get all class names (standard API - works without Tooling API access)
+    query = "SELECT Id, Name FROM ApexClass WHERE NamespacePrefix = null AND Status = 'Active'"
+    cmd = ["sf", "data", "query", "-o", target_org, "-q", query, "--json"]
     data = run_sfdx_cmd(cmd)
     
     records = data.get("result", {}).get("records", [])
+    if not records:
+        return []
+    
+    # Step 2: Use anonymous Apex to check which classes implement Batchable/Schedulable
+    # We batch class names in groups to avoid hitting string limits
+    class_names = [r.get("Name") for r in records if r.get("Name")]
+    class_id_map = {r.get("Name"): r.get("Id") for r in records}
+    
+    # Build anonymous Apex that checks interfaces using Type.forName
+    # and outputs results as JSON-like lines we can parse
+    batch_size = 100
     valid_classes = []
     
-    batchable_regex = re.compile(r'implements\s+.*Database\.Batchable', re.IGNORECASE)
-    schedulable_regex = re.compile(r'implements\s+.*Schedulable', re.IGNORECASE)
-    
-    for record in records:
-        body = record.get("Body", "")
-        if not body:
-            continue
-            
-        is_batchable = bool(batchable_regex.search(body))
-        is_schedulable = bool(schedulable_regex.search(body))
+    for i in range(0, len(class_names), batch_size):
+        chunk = class_names[i:i + batch_size]
         
-        if is_batchable or is_schedulable:
-            valid_classes.append({
-                "Id": record.get("Id"),
-                "Name": record.get("Name"),
-                "isBatchable": is_batchable,
-                "isSchedulable": is_schedulable
-            })
-            
-    # Sort alphabetically by Name
+        apex_lines = ["List<String> results = new List<String>();"]
+        for name in chunk:
+            safe_name = name.replace("'", "\\'")
+            apex_lines.append(f"try {{ Object o = Type.forName('{safe_name}').newInstance();")
+            apex_lines.append(f"  Boolean b = o instanceof Database.Batchable;")
+            apex_lines.append(f"  Boolean s = o instanceof Schedulable;")
+            apex_lines.append(f"  if (b || s) results.add('{safe_name}|' + b + '|' + s);")
+            apex_lines.append(f"}} catch(Exception e) {{}}")
+        
+        apex_lines.append("System.debug('CLASSINFO:' + String.join(results, ';;'));")
+        apex_code = "\n".join(apex_lines)
+        
+        result = _run_anonymous_apex(target_org, apex_code)
+        
+        # Parse output from debug log
+        if result:
+            log = result.get("logs", "") or ""
+            for line in log.split("\n"):
+                if "CLASSINFO:" in line:
+                    info_str = line.split("CLASSINFO:")[1].strip()
+                    if info_str:
+                        entries = info_str.split(";;")
+                        for entry in entries:
+                            parts = entry.strip().split("|")
+                            if len(parts) == 3:
+                                cls_name = parts[0]
+                                is_batch = parts[1].lower() == "true"
+                                is_sched = parts[2].lower() == "true"
+                                valid_classes.append({
+                                    "Id": class_id_map.get(cls_name, ""),
+                                    "Name": cls_name,
+                                    "isBatchable": is_batch,
+                                    "isSchedulable": is_sched
+                                })
+    
     valid_classes.sort(key=lambda x: x["Name"])
     return valid_classes
+
+def _run_anonymous_apex(target_org: str, apex_code: str):
+    """Execute anonymous Apex and return the result including logs."""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.apex', delete=False, encoding='utf-8') as f:
+        f.write(apex_code)
+        temp_path = f.name
+    try:
+        cmd = ["sf", "apex", "run", "-o", target_org, "-f", temp_path, "--json"]
+        data = run_sfdx_cmd(cmd)
+        return data.get("result", {})
+    finally:
+        os.unlink(temp_path)
 
 def get_job_history(target_org: str, class_names: list):
     """Retrieve AsyncApexJob and CronTrigger history for specific classes."""
