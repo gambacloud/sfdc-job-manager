@@ -13,6 +13,7 @@ def run_sfdx_cmd(cmd_list):
             cmd_list,
             capture_output=True,
             text=True,
+            encoding='utf-8',
             check=False, # We handle non-zero exit codes manually to extract SFDX json errors
             shell=(os.name == 'nt') # Important for Windows since `sf` is a .cmd script
         )
