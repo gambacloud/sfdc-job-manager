@@ -103,14 +103,55 @@ async def abort_jobs(request: AbortJobRequest):
 if __name__ == "__main__":
     import uvicorn
     import webbrowser
-    port = int(os.environ.get("PORT", 8000))
+    import socket
+    import logging
+    import traceback
+
+    # Set up crash log file next to the exe / script
+    if getattr(sys, 'frozen', False):
+        log_dir = os.path.dirname(sys.executable)
+    else:
+        log_dir = os.path.dirname(os.path.abspath(__file__))
+    log_file = os.path.join(log_dir, "sfdc_job_manager.log")
+
+    logging.basicConfig(
+        filename=log_file,
+        level=logging.DEBUG,
+        format="%(asctime)s %(levelname)s %(message)s"
+    )
+    logging.info("=== SFDC Job Manager starting ===")
+    logging.info(f"Python: {sys.version}")
+    logging.info(f"Frozen: {getattr(sys, 'frozen', False)}")
+    logging.info(f"Base dir: {BASE_DIR}")
+    logging.info(f"Static dir: {STATIC_DIR}")
+    logging.info(f"Static exists: {os.path.isdir(STATIC_DIR)}")
+
+    def find_free_port(start=8000, end=8010):
+        for p in range(start, end + 1):
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                try:
+                    s.bind(("0.0.0.0", p))
+                    return p
+                except OSError:
+                    continue
+        return start
+
     try:
-        print(f"Starting SFDC Job Manager on http://localhost:{port}")
-        print("Press Ctrl+C to stop.\n")
+        port = int(os.environ.get("PORT", 0)) or find_free_port()
+        logging.info(f"Using port: {port}")
         is_frozen = getattr(sys, 'frozen', False)
+
+        print(f"Starting SFDC Job Manager on http://localhost:{port}")
+        print(f"Log file: {log_file}")
+        print("Press Ctrl+C to stop.\n")
+
         if is_frozen:
             webbrowser.open(f"http://localhost:{port}")
+
         uvicorn.run("main:app", host="0.0.0.0", port=port, reload=not is_frozen)
     except Exception as e:
+        error_msg = traceback.format_exc()
+        logging.error(f"CRASH:\n{error_msg}")
         print(f"\n\nERROR: {e}")
+        print(f"Full log saved to: {log_file}")
         input("\nPress Enter to exit...")
