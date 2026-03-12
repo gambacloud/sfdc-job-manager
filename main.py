@@ -147,8 +147,9 @@ if __name__ == "__main__":
 
         if is_frozen:
             webbrowser.open(f"http://localhost:{port}")
-
-        uvicorn.run("main:app", host="0.0.0.0", port=port, reload=not is_frozen)
+            uvicorn.run(app, host="0.0.0.0", port=port)
+        else:
+            uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
     except Exception as e:
         error_msg = traceback.format_exc()
         logging.error(f"CRASH:\n{error_msg}")
