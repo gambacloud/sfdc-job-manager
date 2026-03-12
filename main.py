@@ -106,6 +106,10 @@ if __name__ == "__main__":
     import socket
     import logging
     import traceback
+    import multiprocessing
+
+    # Required for PyInstaller + Windows
+    multiprocessing.freeze_support()
 
     # Set up crash log file next to the exe / script
     if getattr(sys, 'frozen', False):
@@ -147,12 +151,19 @@ if __name__ == "__main__":
 
         if is_frozen:
             webbrowser.open(f"http://localhost:{port}")
-            uvicorn.run(app, host="0.0.0.0", port=port)
+            # Use direct app object and explicit logger for frozen mode
+            uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
         else:
             uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
-    except Exception as e:
+            
+    except BaseException as e:
+        # Catching BaseException handles SystemExit, KeyboardInterrupt, etc.
         error_msg = traceback.format_exc()
-        logging.error(f"CRASH:\n{error_msg}")
-        print(f"\n\nERROR: {e}")
-        print(f"Full log saved to: {log_file}")
-        input("\nPress Enter to exit...")
+        logging.error(f"CRASH/EXIT:\n{error_msg}")
+        if not isinstance(e, (KeyboardInterrupt, SystemExit)):
+             print(f"\n\nERROR: {e}")
+             print(f"Full log saved to: {log_file}")
+        
+        # Always pause unless it was a clean Ctrl+C
+        if not isinstance(e, KeyboardInterrupt):
+            input("\nPress Enter to exit...")
