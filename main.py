@@ -1,4 +1,5 @@
 import os
+import sys
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -7,14 +8,22 @@ from typing import List, Optional
 
 import sfdx
 
+# Resolve base dir for PyInstaller bundled exe
+if getattr(sys, 'frozen', False):
+    BASE_DIR = sys._MEIPASS
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+
 app = FastAPI(title="SFDC Job Manager")
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.get("/")
 async def serve_index():
-    return FileResponse("static/index.html")
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 @app.get("/api/orgs")
 async def get_orgs():
@@ -93,5 +102,15 @@ async def abort_jobs(request: AbortJobRequest):
 
 if __name__ == "__main__":
     import uvicorn
+    import webbrowser
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+    try:
+        print(f"Starting SFDC Job Manager on http://localhost:{port}")
+        print("Press Ctrl+C to stop.\n")
+        is_frozen = getattr(sys, 'frozen', False)
+        if is_frozen:
+            webbrowser.open(f"http://localhost:{port}")
+        uvicorn.run("main:app", host="0.0.0.0", port=port, reload=not is_frozen)
+    except Exception as e:
+        print(f"\n\nERROR: {e}")
+        input("\nPress Enter to exit...")
